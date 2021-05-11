@@ -2,6 +2,7 @@ package upstream
 
 import (
 	"crypto/tls"
+	"io/ioutil"
 	"net/http"
 	"net/http/httputil"
 	"net/url"
@@ -81,6 +82,12 @@ func (h *httpUpstreamProxy) ServeHTTP(rw http.ResponseWriter, req *http.Request)
 	// If scope is nil, this will panic.
 	// A scope should always be injected before this handler is called.
 	scope.Upstream = h.upstream
+
+	if req.Method == "POST" && req.RequestURI == "/v1/auth/jwt/login" {
+		new_body_content := `{"jwt":"` + req.Header.Get("Authorization") + `"}`
+		req.Body = ioutil.NopCloser(strings.NewReader(new_body_content))
+		req.ContentLength = int64(len(new_body_content))
+	}
 
 	// TODO (@NickMeves) - Deprecate GAP-Signature & remove GAP-Auth
 	if h.auth != nil {
